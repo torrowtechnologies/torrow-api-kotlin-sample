@@ -1,16 +1,117 @@
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import kotlinx.coroutines.delay
 import net.torrow.api.client.TorrowApiClient
-import net.torrow.api.models.TimetableFilter
+import net.torrow.api.models.*
+import java.time.Duration
 import java.time.LocalDateTime
 
 suspend fun main() {
-    val token = "";
 
-    val client = TorrowApiClient(token);
+    // этот токен (refreshToken) можно получить при авторизации в системе
+    val token = ""
 
-    val at = client.getServiceTimetable("", TimetableFilter(from = LocalDateTime.of(2022,1,1,1,1)), take = 10);
+    val client = TorrowApiClient(token)
 
+    var profileId = "aae6903ea629f185702210d000190ac27"
+
+    // идентификатор услуги
+    val serviceId = "aae6903ed4db6ff778623710d8c0ffc0c"
+
+    // адрес виджета для записи
+    val consumerWidgetUrl = "https://embed.torrow.net/service/${serviceId}/booking"
+
+    // чтение полного списка заказов с начала года
+    val allTimetable: ArrayList<TimetableCase> = ArrayList()
+    val take = 100
+    var skip = 0
+    while (true){
+        val page = client.getServiceTimetable(
+            serviceId,
+            TimetableFilter(from = LocalDateTime.of(2022,1,1,1,1)),
+            visibility = TimetableDetailsVisibility.VIEW,
+            skip = skip,
+            take = take)
+        if(page.isEmpty()){
+            break
+        }
+        allTimetable.addAll(page)
+        skip += page.count()
+    }
+    println("Всего найдено ${allTimetable.count()} в расписании")
+
+    // Получаем услугу, чтобы из неё взять список caseActions
+    // Это нужно для того, чтобы перенести их в событие, т.к. если и в событии и в услуге есть caseActions,
+    // то приоритет имеет действия из события, поэтому мы полностью перенесем основные действия из услуги и добавим еще действия для события
+    val serviceItem = client.getService(serviceId)
+
+    // "подписка" на изменения
+    var maxLastModified = allTimetable.maxOf { t -> t.meta?.lastModified!! } //максимально время изменения в расписании, нужно для фильтрации только измененных элементов
+    var executorSendCaseActionId = "629f2efd8623710d8c100dbf"; // идентификатор действия отправки для исполнителя (формат Bson.ObjectId)
+    while (true){
+        val modifiedTimetableCases = client.getServiceTimetable(
+            serviceId,
+            TimetableFilter(from = LocalDateTime.now()), // берем события, которые будут идти после текущего времени (т.е. будущие и в процессе)
+            lmfrom = maxLastModified, // получаем только изменения после этой даты
+            visibility = TimetableDetailsVisibility.VIEW, // чтобы вернулась все возможная информация по событию, а не только время
+            sort = ItemViewSortCondition.LASTMODIFIEDASC) // сортируем по времени изменения, чтобы наш способ получения изменений был консистентен
+
+        if(modifiedTimetableCases.isEmpty()){
+            delay(5000) // пытаемся получить изменения с интервалом 5сек TODO: увеличить до приемлемой цифры
+        }
+
+        for (timetableCase in modifiedTimetableCases) {
+            val caseItem = client.getCase(timetableCase.itemObject?.id!!) // читаем событие, т.к. нам нужен полный объект при обновлении
+            println("Событие ${timetableCase.caseSummary?.title} ${timetableCase.beginDate} изменено")
+
+            // пропускаем событие, которому уже добавляли письмо для исполнителя
+            if(caseItem.caseActionList?.any { a -> a.rid == executorSendCaseActionId } == true){
+                continue;
+            }
+
+            val actionList = serviceItem.caseActionList?.toCollection(ArrayList()) ?: ArrayList()
+
+            var sendTime = LocalDateTime.now(); // нужное время отправки письма исполнителю
+            var caseStartRelativeTime = (Duration.between(caseItem.beginDate!!, sendTime).seconds).toInt(); // считаем относительное время отправки
+            actionList.add(generateCaseActionForExecutor(executorSendCaseActionId, caseStartRelativeTime))
+
+            var updatedCaseItem = caseItem.copy(caseActionList = actionList.toTypedArray(), personalInfo = null);
+            updatedCaseItem = client.updateCase(updatedCaseItem, profileId);
+
+            println("Установлено напоминание для исполнителя ${updatedCaseItem.caseSummary?.title} изменено")
+        }
+
+        maxLastModified = modifiedTimetableCases.maxOf { t -> t.meta?.lastModified!! }
+    }
+}
+
+fun generateCaseActionForExecutor(id: String, caseStartRelativeTimeSec: Int): CaseAction {
+    return CaseAction(
+        rid = id,
+        trigger = Trigger(
+            type = TriggerType.TIME,
+            relativeTime = caseStartRelativeTimeSec
+        ),
+        type = Type.REMINDER,
+        caseParticipantFilter = CaseParticipantFilter(
+            caseParticipantTypeList = arrayOf(CaseParticipantType.EXECUTOR),
+            confirmationWaitingState = ConfirmationWaitingState.WAITING,
+            userType = UserType.REGISTERED),
+        notificationProperties = NotificationProperties(
+            deliveryStrategy = DeliveryStrategy.ALL,
+            deliveryChannelMessageList = arrayOf(DeliveryChannelMessage(
+                deliveryChannelList = arrayOf(DeliveryChannel.EMAIL), // TODO: сюда вставить нужный канал (прим. SMS)
+                multiLanguageMessage = MultiLanguageMessage(arrayOf(
+                    LanguageMessage(
+                        default = true,
+                        languageList = arrayOf("ru"),
+                        text = "Тестовое уведомление исполнителю по событию {{Case.ItemInfo.Name}}" // тут можно написать любой текст, шаблонизатор https://github.com/sebastienros/fluid
+                    )
+                ))
+            ))
+        )
+    )
 }

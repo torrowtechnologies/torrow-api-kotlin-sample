@@ -19,14 +19,14 @@ import net.torrow.api.models.Trigger
 import net.torrow.api.models.Type
 
 /**
- * 
- * @param rid 
- * @param type 
- * @param trigger 
- * @param notificationProperties 
- * @param caseParticipantFilter 
- * @param caseChangeProperties 
- * @param requestConfirmationProperties 
+ * Действие по событию
+ * @param rid Идентификатор действия (ObjectId)
+ * @param type Тип действия
+ * @param trigger Триггер действия
+ * @param notificationProperties Настройки уведомления
+ * @param caseParticipantFilter Настройки получателей действия
+ * @param caseChangeProperties Описание действия типа "Изменение события"
+ * @param requestConfirmationProperties Описание действия типа "Запрос подтверждения"
  */
 data class CaseAction (
 

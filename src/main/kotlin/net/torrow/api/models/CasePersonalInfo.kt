@@ -44,7 +44,7 @@ import net.torrow.api.models.Subscription
  * @param personalSolutionData 
  */
 data class CasePersonalInfo (
-
+    var discriminator: String? = "CasePersonalInfo",
     val caseParticipant: CaseParticipant? = null,
     val ticketResource: ResourceItem? = null,
     val paymentResource: ResourceItem? = null,

@@ -11,145 +11,123 @@
  */
 package net.torrow.api.models
 
-import net.torrow.api.models.AnyoneAccess
-import net.torrow.api.models.Appendix
-import net.torrow.api.models.AvailableResources
-import net.torrow.api.models.BlockInfo
-import net.torrow.api.models.BookingResource
-import net.torrow.api.models.CaseAction
-import net.torrow.api.models.CasePersonalInfo
-import net.torrow.api.models.CaseState
-import net.torrow.api.models.CaseSummary
-import net.torrow.api.models.CaseType
-import net.torrow.api.models.CaseVisitCard
-import net.torrow.api.models.CheckinPermission
-import net.torrow.api.models.ChildItemStat
-import net.torrow.api.models.FeedbackOptions
-import net.torrow.api.models.FileInfo
-import net.torrow.api.models.GroupInfo
-import net.torrow.api.models.LoyaltyTransactionProperties
-import net.torrow.api.models.MasterInfo
-import net.torrow.api.models.ObjectInfo
-import net.torrow.api.models.OrderNumber
-import net.torrow.api.models.ParticipateFieldRequirements
-import net.torrow.api.models.PriceProperties
-import net.torrow.api.models.PublicityType
-import net.torrow.api.models.Rating
-import net.torrow.api.models.ResourceGroup
 import net.torrow.api.models.Schedule
 import net.torrow.api.models.SearchMode
 import net.torrow.api.models.SolutionData
+import java.time.LocalDateTime
+import java.util.ArrayList
 
 /**
- * 
- * @param beginDate 
- * @param description 
- * @param endDate 
- * @param placeId 
- * @param serviceId 
- * @param groupId 
- * @param place 
- * @param caseState 
- * @param caseType 
- * @param caseStateDate 
- * @param personalInfo 
- * @param bookingResourceList 
- * @param schedule 
- * @param registrationOpen 
- * @param registrationClose 
- * @param visitCard 
- * @param bookingDuration 
- * @param maxConsumerQuantity 
- * @param bookingConsumerQuantity 
- * @param executorUsagePercent 
- * @param availableResources 
- * @param needApproval 
- * @param createSingleCases 
- * @param orderNumber 
- * @param checkinPermission 
- * @param hidden 
- * @param consumersCount 
- * @param caseSummary 
- * @param appendixList 
- * @param participateFieldRequirements 
- * @param resourceGroupList 
- * @param priceProperties 
- * @param priority 
- * @param clientGroupId 
- * @param caseActionList 
- * @param loyaltyTransactionPropertiesList 
- * @param name 
- * @param uniqueName 
- * @param image 
- * @param masterInfo 
- * @param publicityType 
- * @param searchMode 
- * @param anyoneAccess 
- * @param tags 
- * @param rating 
- * @param blockInfo 
- * @param groupInfo 
- * @param solutionData 
- * @param childItemStats 
- * @param feedbackOptions 
- * @param integrationIds 
- * @param id 
- * @param meta 
+ * Событие
+ * @param beginDate Дата начала
+ * @param description Описание
+ * @param endDate Дата окончания
+ * @param placeId Идентификатор места проведения (из справочника мест)
+ * @param serviceId Идентификатор услуги (если событие по услуге (заказ, запись или сеанс))
+ * @param groupId Идентификатор группового события (если текущее событие явлеется штучным, созданным по периодическому групповому)
+ * @param place Место проведения (в произвольной форме)
+ * @param caseState Состояние события
+ * @param caseType Тип события
+ * @param caseStateDate Дата последнего изменения состояния события
+ * @param personalInfo Информация текущего пользователя, связанная с событием
+ * @param bookingResourceList Список ресурсов события
+ * @param schedule Расписание
+ * @param registrationOpen Начало регистрации в секундах относительно начала события (прим: -3600, если записываться на событие можно не раньше чем за час до начала)
+ * @param registrationClose Окончание регистрации в секундах относительно начала события (прим: 300, если записываться на событие можно не позже 5мин почле начала)
+ * @param visitCard Визитка события
+ * @param bookingDuration Длительность бронирования (не используется)
+ * @param maxConsumerQuantity Моксимальное количество участников события
+ * @param bookingConsumerQuantity Разерервированное количество мест участников события
+ * @param executorUsagePercent Процент занятости исполнителя в этом событии (используется для учета/ограничения загрузки исполнителей)
+ * @param availableResources - (не используется)
+ * @param needApproval Признак необходимости подтверждения участия в событии
+ * @param createSingleCases Признак создания штучных событий, если текущее событие периодическое
+ * @param orderNumber Номер заказа
+ * @param checkinPermission Настройки ограничений записи на событие
+ * @param hidden Скрывать в календаре
+ * @param consumersCount Текущее количество участников
+ * @param caseSummary Краткая информация о событии (название услуги, имя участика и исполнителя, стоимость итп)
+ * @param appendixList Дополнительнай информация, которая будет прикрепляться для участников события
+ * @param participateFieldRequirements  Настройки полей контактной информации для участников
+ * @param resourceGroupList Описание доступных групп ресурсов для события
+ * @param priceProperties Настройка стоимости события
+ * @param priority - (не используется)
+ * @param clientGroupId Идентификатор базы клиентов
+ * @param caseActionList Описание действий
+ * @param loyaltyTransactionPropertiesList - (не используется)
+ * @param name Имя события
+ * @param uniqueName Уникально имя события
+ * @param image Картинка
+ * @param masterInfo Информация об элементе, с которого копировалось данное событие
+ * @param publicityType Тип публичности
+ * @param searchMode Доступность события в поиске
+ * @param anyoneAccess Доступность события
+ * @param tags Тэги
+ * @param rating Рейтинг
+ * @param blockInfo Информация о модерации/блокировки события
+ * @param groupInfo Информация о настройках группы, если данное событие является групповым элементом
+ * @param solutionData Дополнительные данные решения
+ * @param childItemStats Статистика по вложенным в это событие элементам
+ * @param feedbackOptions Настройки отзывов
+ * @param integrationIds Идентификаторы интеграций
+ * @param id Идентификатор
+ * @param meta Метаинформация
  */
-data class CaseItem (
+data class CaseItem(
 
-    val beginDate: java.time.LocalDateTime? = null,
-    val description: kotlin.String? = null,
-    val endDate: java.time.LocalDateTime? = null,
-    val placeId: kotlin.String? = null,
-    val serviceId: kotlin.String? = null,
-    val groupId: kotlin.String? = null,
-    val place: kotlin.String? = null,
+    val beginDate: LocalDateTime? = null,
+    val description: String? = null,
+    val endDate: LocalDateTime? = null,
+    val placeId: String? = null,
+    val serviceId: String? = null,
+    val groupId: String? = null,
+    val place: String? = null,
     val caseState: CaseState? = null,
     val caseType: CaseType? = null,
-    val caseStateDate: java.time.LocalDateTime? = null,
+    val caseStateDate: LocalDateTime? = null,
     val personalInfo: CasePersonalInfo? = null,
-    val bookingResourceList: kotlin.Array<BookingResource>? = null,
+    val bookingResourceList: Array<BookingResource>? = null,
     val schedule: Schedule? = null,
-    val registrationOpen: kotlin.Int? = null,
-    val registrationClose: kotlin.Int? = null,
+    val registrationOpen: Int? = null,
+    val registrationClose: Int? = null,
     val visitCard: CaseVisitCard? = null,
-    val bookingDuration: kotlin.Int? = null,
-    val maxConsumerQuantity: kotlin.Int? = null,
-    val bookingConsumerQuantity: kotlin.Int? = null,
-    val executorUsagePercent: kotlin.Double? = null,
+    val bookingDuration: Int? = null,
+    val maxConsumerQuantity: Int? = null,
+    val bookingConsumerQuantity: Int? = null,
+    val executorUsagePercent: Double? = null,
     val availableResources: AvailableResources? = null,
-    val needApproval: kotlin.Boolean? = null,
-    val createSingleCases: kotlin.Boolean? = null,
+    val needApproval: Boolean? = null,
+    val createSingleCases: Boolean? = null,
     val orderNumber: OrderNumber? = null,
     val checkinPermission: CheckinPermission? = null,
-    val hidden: kotlin.Boolean? = null,
-    val consumersCount: kotlin.Int? = null,
+    val hidden: Boolean? = null,
+    val consumersCount: Int? = null,
     val caseSummary: CaseSummary? = null,
-    val appendixList: kotlin.Array<Appendix>? = null,
+    val appendixList: Array<Appendix>? = null,
     val participateFieldRequirements: ParticipateFieldRequirements? = null,
-    val resourceGroupList: kotlin.Array<ResourceGroup>? = null,
+    val resourceGroupList: Array<ResourceGroup>? = null,
     val priceProperties: PriceProperties? = null,
-    val priority: kotlin.Double? = null,
-    val clientGroupId: kotlin.String? = null,
-    val caseActionList: kotlin.Array<CaseAction>? = null,
-    val loyaltyTransactionPropertiesList: kotlin.Array<LoyaltyTransactionProperties>? = null,
-    val name: kotlin.String? = null,
-    val uniqueName: kotlin.String? = null,
+    val priority: Double? = null,
+    val clientGroupId: String? = null,
+    val caseActionList: Array<CaseAction>? = null,
+    val loyaltyTransactionPropertiesList: Array<LoyaltyTransactionProperties>? = null,
+    val name: String? = null,
+    val uniqueName: String? = null,
     val image: FileInfo? = null,
     val masterInfo: MasterInfo? = null,
     val publicityType: PublicityType? = null,
     val searchMode: SearchMode? = null,
     val anyoneAccess: AnyoneAccess? = null,
-    val tags: kotlin.Array<kotlin.String>? = null,
+    val tags: Array<String>? = null,
     val rating: Rating? = null,
     val blockInfo: BlockInfo? = null,
     val groupInfo: GroupInfo? = null,
     val solutionData: SolutionData? = null,
-    val childItemStats: kotlin.Array<ChildItemStat>? = null,
+    val childItemStats: Array<ChildItemStat>? = null,
     val feedbackOptions: FeedbackOptions? = null,
-    val integrationIds: kotlin.Array<kotlin.String>? = null,
-    val id: kotlin.String? = null,
-    val meta: ObjectInfo? = null
+    val integrationIds: Array<String>? = null,
+    val id: String? = null,
+    val meta: ObjectInfo? = null,
+    val discriminator: String = "CaseItem",
 ) {
 }

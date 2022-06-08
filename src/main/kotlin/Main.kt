@@ -68,7 +68,7 @@ suspend fun main() {
 
         for (timetableCase in modifiedTimetableCases) {
             val caseItem = client.getCase(timetableCase.itemObject?.id!!) // читаем событие, т.к. нам нужен полный объект при обновлении
-            println("Событие ${timetableCase.caseSummary?.title} ${timetableCase.beginDate} изменено")
+            println("Событие ${timetableCase.name} ${timetableCase.caseSummary?.title} ${timetableCase.beginDate} изменено")
 
             // пропускаем событие, которому уже добавляли письмо для исполнителя
             if(caseItem.caseActionList?.any { a -> a.rid == executorSendCaseActionId } == true){
@@ -84,7 +84,7 @@ suspend fun main() {
             var updatedCaseItem = caseItem.copy(caseActionList = actionList.toTypedArray(), personalInfo = null);
             updatedCaseItem = client.updateCase(updatedCaseItem, profileId);
 
-            println("Установлено напоминание для исполнителя ${updatedCaseItem.caseSummary?.title} изменено")
+            println("Установлено напоминание для исполнителя ${updatedCaseItem.name}")
         }
 
         maxLastModified = modifiedTimetableCases.maxOf { t -> t.meta?.lastModified!! }

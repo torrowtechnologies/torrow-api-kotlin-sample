@@ -8,6 +8,8 @@ import net.torrow.api.client.TorrowApiClient
 import net.torrow.api.models.*
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 suspend fun main() {
 
@@ -50,17 +52,18 @@ suspend fun main() {
 
     // "подписка" на изменения
     var maxLastModified = allTimetable.maxOf { t -> t.meta?.lastModified!! } //максимально время изменения в расписании, нужно для фильтрации только измененных элементов
-    var executorSendCaseActionId = "629f2efd8623710d8c100dbf"; // идентификатор действия отправки для исполнителя (формат Bson.ObjectId)
+    var executorSendCaseActionId = "629f2efd8623710d8c100000"; // идентификатор действия отправки для исполнителя (формат Bson.ObjectId)
     while (true){
         val modifiedTimetableCases = client.getServiceTimetable(
             serviceId,
-            TimetableFilter(from = LocalDateTime.now()), // берем события, которые будут идти после текущего времени (т.е. будущие и в процессе)
-            lmfrom = maxLastModified, // получаем только изменения после этой даты
+            TimetableFilter(from = LocalDateTime.now(ZoneOffset.UTC)), // берем события, которые будут идти после текущего времени (т.е. будущие и в процессе)
+            lmfrom = maxLastModified.plusSeconds(1), // получаем только изменения после этой даты (плюсуем секунду, чтобы не захватывать то же)
             visibility = TimetableDetailsVisibility.VIEW, // чтобы вернулась все возможная информация по событию, а не только время
             sort = ItemViewSortCondition.LASTMODIFIEDASC) // сортируем по времени изменения, чтобы наш способ получения изменений был консистентен
 
         if(modifiedTimetableCases.isEmpty()){
             delay(5000) // пытаемся получить изменения с интервалом 5сек TODO: увеличить до приемлемой цифры
+            continue
         }
 
         for (timetableCase in modifiedTimetableCases) {
@@ -74,8 +77,8 @@ suspend fun main() {
 
             val actionList = serviceItem.caseActionList?.toCollection(ArrayList()) ?: ArrayList()
 
-            var sendTime = LocalDateTime.now(); // нужное время отправки письма исполнителю
-            var caseStartRelativeTime = (Duration.between(caseItem.beginDate!!, sendTime).seconds).toInt(); // считаем относительное время отправки
+            var sendTime = LocalDateTime.now(ZoneOffset.UTC); // нужное время отправки письма исполнителю
+            var caseStartRelativeTime = (Duration.between(caseItem.beginDate!!, sendTime).seconds).toInt() + 30; // считаем относительное время отправки (+30сек от текущего, т.к. время на сервере может спешить от текущего и оно может посчитаться просроченным)
             actionList.add(generateCaseActionForExecutor(executorSendCaseActionId, caseStartRelativeTime))
 
             var updatedCaseItem = caseItem.copy(caseActionList = actionList.toTypedArray(), personalInfo = null);
@@ -98,7 +101,7 @@ fun generateCaseActionForExecutor(id: String, caseStartRelativeTimeSec: Int): Ca
         type = Type.REMINDER,
         caseParticipantFilter = CaseParticipantFilter(
             caseParticipantTypeList = arrayOf(CaseParticipantType.EXECUTOR),
-            confirmationWaitingState = ConfirmationWaitingState.WAITING,
+            confirmationWaitingState = ConfirmationWaitingState.UNKNOWNCONFIRMATIONWAITINGSTATE,
             userType = UserType.REGISTERED),
         notificationProperties = NotificationProperties(
             deliveryStrategy = DeliveryStrategy.ALL,

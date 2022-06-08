@@ -36,7 +36,7 @@ class TorrowApiClient internal constructor(private val refreshToken: String) {
             }
         }
         install(Logging) {
-            logger = Logger.SIMPLE
+            logger = Logger.EMPTY
             level = LogLevel.BODY
         }
     }

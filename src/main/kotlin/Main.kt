@@ -75,6 +75,9 @@ suspend fun main() {
                 continue;
             }
 
+            var consumer = client.getCaseParticipants(caseItem.id!!, caseParticipantTypeList = arrayOf(CaseParticipantType.CONSUMER), take = 1)
+            println("Потребитель события:  ${consumer[0].caseParticipation?.contactInformation?.fields?.first { it.name == "ФИО" }?.value}")
+
             val actionList = serviceItem.caseActionList?.toCollection(ArrayList()) ?: ArrayList()
 
             var sendTime = LocalDateTime.now(ZoneOffset.UTC); // нужное время отправки письма исполнителю

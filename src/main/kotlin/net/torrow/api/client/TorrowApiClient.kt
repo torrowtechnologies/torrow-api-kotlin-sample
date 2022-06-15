@@ -136,6 +136,49 @@ class TorrowApiClient internal constructor(private val refreshToken: String) {
     }
 
     /**
+     * Получить список участников события
+     *
+     * @param caseId идентификатор события.
+     * @param caseParticipantStateList фильтр состояний участия
+     * @param caseParticipantTypeList фильтр типа участия
+     * @param agentType фильтр типа агента
+     * @param take количество запрашиваемых элементов (используется для paging)
+     * @param skip количество пропускаемых заказов с начала списка (используется для paging)
+     * @param lmfrom lastModifiedFrom - время, после которого последний раз изменялся заказ (используется для получения изменений)
+     * @param lmto lastModifiedFrom - время, до которого последний раз изменялся заказ (используется для получения изменений)
+     * @param includeDeleted выдавать удаленные заказы (не путать с отмененными)
+     * @param sort порядок сортировки
+     */
+    suspend fun getCaseParticipants(
+        caseId: String,
+        caseParticipantStateList: Array<CaseParticipantState>? = null,
+        caseParticipantTypeList: Array<CaseParticipantType>? = null,
+        agentType: AgentType? = null,
+        take: Int? = null,
+        skip: Int? = null,
+        lmfrom: java.time.LocalDateTime? = null,
+        lmto: java.time.LocalDateTime? = null,
+        includeDeleted: Boolean? = null,
+        sort: ItemViewSortCondition? = null): Array<CaseParticipantView> {
+
+        var resp : Array<CaseParticipantView> =  client.get("${basePath}/cases/${caseId}/caseparticipants"){
+            accept(ContentType.Application.Json)
+            contentType(ContentType.Application.Json)
+            caseParticipantStateList?.forEach { parameter("caseParticipantStateList", it) }
+            caseParticipantTypeList?.forEach { parameter("caseParticipantTypeList", it) }
+            parameter("agentType", agentType)
+            parameter("take", take)
+            parameter("skip", skip)
+            parameter("lmfrom", lmfrom)
+            parameter("lmto", lmto)
+            parameter("includeDeleted", includeDeleted)
+            parameter("sort", sort)
+        }.body()
+
+        return resp;
+    }
+
+    /**
      * Получить событие
      *
      * @param caseId Идентификатор события

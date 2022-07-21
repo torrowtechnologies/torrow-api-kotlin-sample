@@ -179,6 +179,25 @@ class TorrowApiClient internal constructor(private val refreshToken: String) {
     }
 
     /**
+     * Получить токен для элемента
+     *
+     * @param caseId идентификатор события.
+     * @param securityTokenRequest контекст безопасности для элемента
+     */
+    suspend fun getSecurityTokenForCase(
+        caseId: String,
+        securityTokenRequest: GenerateSecurityTokenReq): String {
+
+        var resp : GenerateSecurityTokenResp =  client.post("${basePath}/cases/${caseId}/generatesecuritytoken"){
+            accept(ContentType.Application.Json)
+            contentType(ContentType.Application.Json)
+            setBody(securityTokenRequest)
+        }.body()
+
+        return resp.token!!;
+    }
+
+    /**
      * Получить событие
      *
      * @param caseId Идентификатор события

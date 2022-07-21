@@ -21,7 +21,7 @@ suspend fun main() {
     var profileId = "aae6903ea629f185702210d000190ac27"
 
     // идентификатор услуги
-    val serviceId = "aae6903ed4db6ff778623710d8c0ffc0c"
+    val serviceId = "aae6903ed3530491b92f2c97a6df479a8"
 
     // адрес виджета для записи
     val consumerWidgetUrl = "https://embed.torrow.net/service/${serviceId}/booking"
@@ -75,8 +75,16 @@ suspend fun main() {
                 continue;
             }
 
-            var consumer = client.getCaseParticipants(caseItem.id!!, caseParticipantTypeList = arrayOf(CaseParticipantType.CONSUMER), take = 1)
-            println("Потребитель события:  ${consumer[0].caseParticipation?.contactInformation?.fields?.first { it.name == "ФИО" }?.value}")
+            var consumer = client.getCaseParticipants(caseItem.id!!, caseParticipantTypeList = arrayOf(CaseParticipantType.CONSUMER), take = 1)[0]
+            println("Участник события:  ${consumer.caseParticipation?.contactInformation?.fields?.first { it.name == "ФИО" }?.value}")
+
+            val consumerSecurityToken = client.getSecurityTokenForCase(caseItem.id!!, GenerateSecurityTokenReq(
+                roleIdList = arrayOf(0, 4, 6, 1001),
+                participantState = ParticipantState.ACCEPTED,
+                participantType = ParticipantType.READER
+            ));
+            val consumerCaseUrl = "https://torrow.net/app/tabs/tab-search/case;id=${caseItem.id!!}?caseParticipantProfileId=${consumer.caseParticipation?.profileId!!}&caseParticipantId=${consumer.caseParticipation?.id!!}&securityToken=${consumerSecurityToken}"
+            println("Ссылка участника:  ${consumerCaseUrl}")
 
             val actionList = serviceItem.caseActionList?.toCollection(ArrayList()) ?: ArrayList()
 
